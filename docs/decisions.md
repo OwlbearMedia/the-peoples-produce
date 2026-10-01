@@ -85,3 +85,46 @@ A DO sensor would directly check DWC aeration, but costs $199-355 per reservoir.
 smart-plug power check covers a dead air pump for now. Findings and a recommended
 part are in [research/dissolved-oxygen.md](research/dissolved-oxygen.md).
 
+## 11. One repo growing into general open-source firmware
+
+The long-term aim is open-source firmware for automated hydroponic systems, including
+ones sold as finished products. Rather than keep this repo about one household's
+systems and extract a general project later, this repo grows in that direction:
+
+- The firmware is already split into generic parts (packages, crop database, tools,
+  most docs) and parts specific to one build (node configs like `esphome/dwc-1.yaml`
+  and `docs/hardware/`). Keep it that way: anything only true of one physical build
+  goes in its node config or hardware doc.
+- The first builds stay in the repo as prototypes and reference designs.
+- Material that isn't meant to be open, such as product or furniture designs and
+  business documents, lives outside this repo.
+- Tagged releases become the stable points that builds pin to. Commercial ESPHome
+  devices typically use `dashboard_import` to pull their config from a public repo at
+  a tagged version, which fits this model.
+
+Extracting later was rejected: it splits the history, breaks links, and means
+maintaining two copies of the docs while it happens.
+
+A product would eventually need things a home build doesn't, such as an on-device UI
+for buyers without Home Assistant, a custom PCB, and certification (listed power
+supplies, FCC Part 15). Those are for later and shouldn't shape the code yet, beyond
+keeping control on the node.
+
+## 12. GPL-3.0-or-later
+
+Relicensed from MIT on 2026-09-30, while there was a single author. The intent:
+anyone, including competitors, may use and sell what they build with this project,
+but nobody can take it and close it off. MIT allows closed derivatives; the GPL
+requires distributed versions to stay open under the same terms.
+
+- **Matches ESPHome.** ESPHome's C++ runtime is GPLv3 (its Python tooling is MIT), so
+  firmware built from this repo already ships under GPLv3.
+- **Devices stay hackable.** For consumer devices, GPLv3 requires sellers to let owners
+  install modified firmware. That applies to us too if we sell devices; ESPHome's OTA
+  and USB flashing already make it possible.
+- **"Or later"** keeps the project compatible with future GPL versions.
+- The license covers the whole repository, including the crop database and docs.
+- Versions published under MIT before the change remain available under MIT to anyone
+  who obtained them. Everything from this change on is GPL.
+- Contributions are accepted under the same license.
+

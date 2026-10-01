@@ -10,6 +10,13 @@ node per grow location; each node serves one or more reservoirs and runs all con
 loops itself. Home Assistant is the shared UI and alerting hub. There is no custom
 backend or frontend code.
 
+Direction: this is meant to become general open-source firmware for automated
+hydroponic systems, including commercial ones; the owner's systems are the prototypes
+and reference builds ([decision 11](docs/decisions.md#11-one-repo-growing-into-general-open-source-firmware)).
+Keep packages, the crop database and tools generic. Anything true of only one
+physical build belongs in its node config (`esphome/<node>.yaml`) or
+`docs/hardware/`.
+
 Current state: phase 1, one DWC reservoir (`res_a`) on node `dwc-1`. Reservoir B is
 written but commented out. An NFT node is planned. See [docs/roadmap.md](docs/roadmap.md).
 
@@ -119,3 +126,6 @@ Examples of the kind of thing worth suggesting:
 - Do not add AI attribution of any kind: no `Co-Authored-By` trailers for AI tools and
   no "Generated with" lines in commits or PR descriptions.
 - Never commit `esphome/secrets.yaml` or `.esphome/` build output.
+- The project is GPL-3.0-or-later ([decision 12](docs/decisions.md#12-gpl-30-or-later)).
+  Don't add code or data under an incompatible license; check a source's license
+  before copying from it.
