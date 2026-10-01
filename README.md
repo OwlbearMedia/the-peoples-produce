@@ -1,13 +1,21 @@
 # The People's Produce
 
-Monitoring and control for home hydroponic systems, built on
+Open-source monitoring and control for hydroponic systems, built on
 [ESPHome](https://esphome.io) and [Home Assistant](https://www.home-assistant.io).
 
 One small ESP32 controller per grow location watches pH, EC, water temperature and
 reservoir level, tops off the water and doses pH-down on its own. Home Assistant brings
 every location into one dashboard with history and phone alerts.
 
-## The systems
+## Project direction
+
+The goal is open-source firmware that automated hydroponic systems can run on, whether
+someone builds their own or buys one finished. The control logic, crop database and
+tools are kept general for that reason. The systems below are the first builds: they
+are where the firmware gets proven, and they serve as reference designs for new ones.
+See the [decision log](docs/decisions.md#11-one-repo-growing-into-general-open-source-firmware).
+
+## Prototype systems
 
 | System | Status | Grows |
 |---|---|---|
@@ -82,4 +90,9 @@ Everything is in [docs/](docs/README.md):
 
 ## License
 
-[MIT](LICENSE)
+Copyright (C) 2026 Dylan Whitney
+
+Licensed under the [GNU General Public License v3.0 or later](LICENSE). Anyone may
+use, modify and sell what they build with it, as long as what they distribute stays
+open under the same license. Earlier versions were MIT-licensed; see the
+[decision log](docs/decisions.md#12-gpl-30-or-later).
