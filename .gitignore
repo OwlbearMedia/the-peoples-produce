@@ -1,0 +1,13 @@
+# ESPHome
+esphome/secrets.yaml
+.esphome/
+**/.esphome/
+
+# Python
+__pycache__/
+.venv/
+
+# OS and editors
+.DS_Store
+.vscode/
+.idea/

@@ -1,0 +1,20 @@
+# Shared top-off water tank with one non-contact level switch near the bottom.
+# While the tank is low, every reservoir's top-off pump is blocked so it cannot run dry.
+#
+# Vars: topoff_tank_low_pin
+# Provides: topoff_tank_low (on = tank needs refilling)
+
+binary_sensor:
+  - platform: gpio
+    id: topoff_tank_low
+    name: "Top-off tank low"
+    device_class: problem
+    # The XKC-Y25-NPN pulls the line low when it senses water, so a high line
+    # (held up by the pull-up) means no water at the switch.
+    pin:
+      number: ${topoff_tank_low_pin}
+      mode:
+        input: true
+        pullup: true
+    filters:
+      - delayed_on_off: 10s

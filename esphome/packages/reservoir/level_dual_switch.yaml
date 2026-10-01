@@ -1,0 +1,56 @@
+# Reservoir level from two non-contact capacitive switches (XKC-Y25-NPN) stuck to the
+# outside of the reservoir wall:
+#   low switch:  top-off starts when the water drops below it
+#   high switch: top-off stops when the water reaches it
+#
+# Vars: res, res_name, level_low_pin, level_high_pin
+# Provides: ${res}_water_at_low, ${res}_water_at_high, ${res}_level_fault, ${res}_water_low
+
+binary_sensor:
+  # The XKC-Y25-NPN pulls the line low when it senses water, hence `inverted`.
+  - platform: gpio
+    id: ${res}_water_at_low
+    name: "${res_name} water at low mark"
+    pin:
+      number: ${level_low_pin}
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    filters:
+      # The air stone keeps the surface choppy, so only believe "no water" once it has
+      # held for 30 s.
+      - delayed_on: 2s
+      - delayed_off: 30s
+
+  - platform: gpio
+    id: ${res}_water_at_high
+    name: "${res_name} water at high mark"
+    pin:
+      number: ${level_high_pin}
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    filters:
+      # React quickly to water arriving so top-off stops promptly.
+      - delayed_on: 2s
+      - delayed_off: 30s
+
+  - platform: template
+    id: ${res}_level_fault
+    name: "${res_name} level sensor fault"
+    device_class: problem
+    # Water at the high mark but not at the low mark is physically impossible.
+    lambda: return id(${res}_water_at_high).state && !id(${res}_water_at_low).state;
+    filters:
+      - delayed_on: 1min
+
+  - platform: template
+    id: ${res}_water_low
+    name: "${res_name} water low"
+    device_class: problem
+    lambda: return !id(${res}_water_at_low).state;
+    filters:
+      # Top-off normally fixes this within minutes. Staying low means it can't.
+      - delayed_on: 30min

@@ -1,0 +1,149 @@
+# Auto top-off: a 12 V pump per reservoir, fed from the shared top-off tank.
+# A fill starts when the water drops below the low switch and stops at the high switch.
+#
+# Safety limits (see docs/control-logic.md):
+#   - a fill that runs for the full time limit without reaching the high switch latches
+#     a fault and disables auto top-off until the fault is reset (survives reboots)
+#   - a daily cap on the number of fills
+#   - a hardware watchdog turns the pump off even if the fill logic misbehaves
+#   - no fill while the top-off tank is low, the floor is wet or the level switches disagree
+#
+# Vars: res, res_name, topoff_pump_pin
+# Requires: ${res}_water_at_low, ${res}_water_at_high, ${res}_level_fault
+#           (reservoir/level_dual_switch.yaml), topoff_tank_low (node/topoff_tank.yaml),
+#           floor_leak (node/leak_sensor.yaml)
+# Provides: ${res}_topoff_pump, ${res}_topoff_fill, ${res}_last_topoff_ms, ${res}_topoff_problem
+
+globals:
+  - id: ${res}_topoff_fault_latched
+    type: bool
+    restore_value: true
+    initial_value: "false"
+  - id: ${res}_fills_today
+    type: int
+    initial_value: "0"
+  - id: ${res}_last_topoff_ms
+    type: uint32_t
+    initial_value: "0"
+
+switch:
+  - platform: gpio
+    id: ${res}_topoff_pump
+    name: "${res_name} top-off pump"
+    pin: ${topoff_pump_pin}
+    restore_mode: ALWAYS_OFF
+    on_turn_on:
+      - script.execute: ${res}_topoff_pump_watchdog
+    on_turn_off:
+      - script.stop: ${res}_topoff_pump_watchdog
+
+  - platform: template
+    id: ${res}_topoff_enabled
+    name: "${res_name} auto top-off"
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
+number:
+  - platform: template
+    id: ${res}_topoff_max_fill_s
+    name: "${res_name} top-off max fill time"
+    entity_category: config
+    mode: box
+    optimistic: true
+    restore_value: true
+    min_value: 10
+    max_value: 600
+    step: 5
+    initial_value: 180
+    unit_of_measurement: "s"
+
+  - platform: template
+    id: ${res}_topoff_max_fills_per_day
+    name: "${res_name} top-off max fills per day"
+    entity_category: config
+    mode: box
+    optimistic: true
+    restore_value: true
+    min_value: 1
+    max_value: 48
+    step: 1
+    initial_value: 8
+
+script:
+  - id: ${res}_topoff_pump_watchdog
+    mode: restart
+    then:
+      - delay: !lambda return (uint32_t) (id(${res}_topoff_max_fill_s).state + 10) * 1000;
+      - logger.log:
+          level: WARN
+          format: "${res_name}: top-off pump watchdog tripped"
+      - switch.turn_off: ${res}_topoff_pump
+
+  - id: ${res}_topoff_fill
+    mode: single
+    then:
+      - lambda: |-
+          id(${res}_fills_today) += 1;
+          ESP_LOGI("topoff", "${res_name}: fill %d started", id(${res}_fills_today));
+      - switch.turn_on: ${res}_topoff_pump
+      - wait_until:
+          condition:
+            lambda: |-
+              return id(${res}_water_at_high).state || id(floor_leak).state
+                  || id(topoff_tank_low).state;
+          timeout: !lambda return (uint32_t) id(${res}_topoff_max_fill_s).state * 1000;
+      - switch.turn_off: ${res}_topoff_pump
+      - lambda: |-
+          id(${res}_last_topoff_ms) = millis();
+          if (id(${res}_water_at_high).state) {
+            ESP_LOGI("topoff", "${res_name}: fill complete");
+          } else if (id(floor_leak).state || id(topoff_tank_low).state) {
+            ESP_LOGW("topoff", "${res_name}: fill stopped by leak or empty top-off tank");
+          } else {
+            // Ran the full time limit without reaching the high switch: the pump, the
+            // line or a level switch has failed. Stay off until someone looks at it.
+            id(${res}_topoff_fault_latched) = true;
+            ESP_LOGE("topoff", "${res_name}: fill timed out, auto top-off locked out");
+          }
+
+binary_sensor:
+  - platform: template
+    id: ${res}_topoff_problem
+    name: "${res_name} top-off problem"
+    device_class: problem
+    lambda: |-
+      return id(${res}_topoff_fault_latched)
+          || id(${res}_fills_today) >= (int) id(${res}_topoff_max_fills_per_day).state;
+
+button:
+  - platform: template
+    name: "${res_name} reset top-off fault"
+    entity_category: config
+    on_press:
+      - lambda: |-
+          id(${res}_topoff_fault_latched) = false;
+          id(${res}_fills_today) = 0;
+          ESP_LOGI("topoff", "${res_name}: top-off fault reset");
+
+interval:
+  - interval: 30s
+    then:
+      - if:
+          condition:
+            lambda: |-
+              return id(${res}_topoff_enabled).state
+                  && !id(${res}_topoff_fill).is_running()
+                  && !id(${res}_topoff_fault_latched)
+                  && !id(${res}_water_at_low).state
+                  && !id(${res}_level_fault).state
+                  && !id(topoff_tank_low).state
+                  && !id(floor_leak).state
+                  && id(${res}_fills_today) < (int) id(${res}_topoff_max_fills_per_day).state;
+          then:
+            - script.execute: ${res}_topoff_fill
+
+  # Rolling 24 h window counted from boot, so it works without a clock.
+  - interval: 24h
+    then:
+      - lambda: id(${res}_fills_today) = 0;
