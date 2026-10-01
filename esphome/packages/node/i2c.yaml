@@ -1,0 +1,15 @@
+# I2C bus shared by the Atlas EZO circuits (on isolated carriers) and the SHT4x.
+#
+# Vars (optional): i2c_sda_pin, i2c_scl_pin
+# Provides: bus_i2c
+
+defaults:
+  i2c_sda_pin: GPIO21
+  i2c_scl_pin: GPIO22
+
+i2c:
+  id: bus_i2c
+  sda: ${i2c_sda_pin}
+  scl: ${i2c_scl_pin}
+  frequency: 100kHz
+  scan: true

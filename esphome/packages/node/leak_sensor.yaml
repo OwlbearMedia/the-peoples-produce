@@ -1,0 +1,19 @@
+# Floor leak probe under the reservoirs. While it is wet, no pump may add water.
+#
+# Vars: leak_pin
+# Provides: floor_leak (on = water detected)
+
+binary_sensor:
+  - platform: gpio
+    id: floor_leak
+    name: "Floor leak"
+    device_class: moisture
+    # Water bridges the probe contacts and pulls the line to GND.
+    pin:
+      number: ${leak_pin}
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    filters:
+      - delayed_on: 2s

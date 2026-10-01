@@ -1,0 +1,100 @@
+# EC and water temperature from a DFRobot SEN0707 RS485 EC sensor (K=10, 10-20000 uS/cm).
+#
+# This is the one non-isolated probe allowed in the reservoir. Every other probe in
+# the same water must be galvanically isolated; see docs/sensors-and-isolation.md.
+#
+# Rated accuracy is +/-1% of full scale (+/-0.2 mS/cm), so compare it against a
+# calibrated handheld meter now and then and correct it with the EC offset number.
+#
+# Vars: res, res_name, ec_modbus_address
+# Requires: modbus_rs485 (node/rs485.yaml)
+#           ${res}_ec_low, ${res}_ec_high, ${res}_water_temp_high (reservoir/core.yaml)
+# Provides: ${res}_ec, ${res}_water_temp, ${res}_ec_offset, ${res}_ec_fault,
+#           ${res}_ec_out_of_range, ${res}_water_temp_too_high
+
+modbus_controller:
+  - id: ${res}_ec_modbus
+    modbus_id: modbus_rs485
+    address: ${ec_modbus_address}
+    update_interval: 15s
+
+globals:
+  - id: ${res}_ec_last_ms
+    type: uint32_t
+    initial_value: "0"
+
+number:
+  - platform: template
+    id: ${res}_ec_offset
+    name: "${res_name} EC offset"
+    entity_category: config
+    mode: box
+    optimistic: true
+    restore_value: true
+    min_value: -1.0
+    max_value: 1.0
+    step: 0.01
+    initial_value: 0.0
+    unit_of_measurement: "mS/cm"
+
+# Register map: docs/hardware/dfrobot-sen0707.md
+sensor:
+  - platform: modbus_controller
+    modbus_controller_id: ${res}_ec_modbus
+    id: ${res}_ec
+    name: "${res_name} EC"
+    register_type: holding
+    address: 0x0000
+    value_type: U_WORD
+    unit_of_measurement: "mS/cm"
+    device_class: conductivity
+    state_class: measurement
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.001
+      - lambda: return x + id(${res}_ec_offset).state;
+    on_value:
+      - lambda: id(${res}_ec_last_ms) = millis();
+
+  - platform: modbus_controller
+    modbus_controller_id: ${res}_ec_modbus
+    id: ${res}_water_temp
+    name: "${res_name} water temperature"
+    register_type: holding
+    address: 0x0001
+    value_type: U_WORD
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+binary_sensor:
+  - platform: template
+    id: ${res}_ec_fault
+    name: "${res_name} EC sensor fault"
+    device_class: problem
+    # No valid reading for 5 minutes.
+    lambda: return millis() - id(${res}_ec_last_ms) > 5 * 60 * 1000;
+
+  - platform: template
+    id: ${res}_ec_out_of_range
+    name: "${res_name} EC out of range"
+    device_class: problem
+    lambda: |-
+      if (!id(${res}_ec).has_state()) return false;
+      float ec = id(${res}_ec).state;
+      return ec < id(${res}_ec_low).state || ec > id(${res}_ec_high).state;
+    filters:
+      - delayed_on: 10min
+
+  - platform: template
+    id: ${res}_water_temp_too_high
+    name: "${res_name} water too warm"
+    device_class: problem
+    lambda: |-
+      if (!id(${res}_water_temp).has_state()) return false;
+      return id(${res}_water_temp).state > id(${res}_water_temp_high).state;
+    filters:
+      - delayed_on: 10min

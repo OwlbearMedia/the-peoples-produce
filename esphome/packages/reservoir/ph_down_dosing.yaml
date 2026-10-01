@@ -1,0 +1,173 @@
+# Automatic pH-down dosing with a 12 V peristaltic pump.
+#
+# A dose runs only when every one of these holds (see docs/control-logic.md):
+#   - auto dosing is switched on (it is off after the first flash)
+#   - the pH reading is valid and has stayed above target + deadband
+#   - the mix time has passed since the last dose and since the last top-off
+#   - the top-off pump is not running and the floor is dry
+#   - the hourly and daily dose limits have not been reached
+#
+# Vars: res, res_name, ph_down_pump_pin
+# Requires: ${res}_ph, ${res}_ph_fault (reservoir/ph_ezo.yaml),
+#           ${res}_ph_target, ${res}_ph_deadband (reservoir/core.yaml),
+#           ${res}_topoff_pump, ${res}_last_topoff_ms (reservoir/topoff_pump.yaml),
+#           floor_leak (node/leak_sensor.yaml)
+# Provides: ${res}_ph_down_pump, ${res}_ph_dose, ${res}_ph_dosing_limit
+
+globals:
+  - id: ${res}_last_ph_dose_ms
+    type: uint32_t
+    initial_value: "0"
+  - id: ${res}_ph_doses_hour
+    type: int
+    initial_value: "0"
+  - id: ${res}_ph_doses_day
+    type: int
+    initial_value: "0"
+
+switch:
+  - platform: gpio
+    id: ${res}_ph_down_pump
+    name: "${res_name} pH-down pump"
+    pin: ${ph_down_pump_pin}
+    restore_mode: ALWAYS_OFF
+    on_turn_on:
+      - script.execute: ${res}_ph_down_pump_watchdog
+    on_turn_off:
+      - script.stop: ${res}_ph_down_pump_watchdog
+
+  - platform: template
+    id: ${res}_ph_dosing_enabled
+    name: "${res_name} auto pH dosing"
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
+number:
+  - platform: template
+    id: ${res}_ph_dose_s
+    name: "${res_name} pH-down dose time"
+    entity_category: config
+    mode: box
+    optimistic: true
+    restore_value: true
+    min_value: 0.2
+    max_value: 10.0
+    step: 0.1
+    initial_value: 1.0
+    unit_of_measurement: "s"
+
+  - platform: template
+    id: ${res}_ph_mix_min
+    name: "${res_name} pH mix time"
+    entity_category: config
+    mode: box
+    optimistic: true
+    restore_value: true
+    min_value: 2
+    max_value: 60
+    step: 1
+    initial_value: 10
+    unit_of_measurement: "min"
+
+  - platform: template
+    id: ${res}_ph_max_doses_hour
+    name: "${res_name} pH max doses per hour"
+    entity_category: config
+    mode: box
+    optimistic: true
+    restore_value: true
+    min_value: 1
+    max_value: 6
+    step: 1
+    initial_value: 2
+
+  - platform: template
+    id: ${res}_ph_max_doses_day
+    name: "${res_name} pH max doses per day"
+    entity_category: config
+    mode: box
+    optimistic: true
+    restore_value: true
+    min_value: 1
+    max_value: 48
+    step: 1
+    initial_value: 12
+
+script:
+  # Hard stop that does not depend on the dosing logic. Longer than the longest dose.
+  - id: ${res}_ph_down_pump_watchdog
+    mode: restart
+    then:
+      - delay: 15s
+      - logger.log:
+          level: WARN
+          format: "${res_name}: pH-down pump watchdog tripped"
+      - switch.turn_off: ${res}_ph_down_pump
+
+  - id: ${res}_ph_dose
+    mode: single
+    then:
+      - lambda: |-
+          ESP_LOGI("ph_dosing", "${res_name}: pH %.2f > %.2f, dosing %.1f s",
+                   id(${res}_ph).state,
+                   id(${res}_ph_target).state + id(${res}_ph_deadband).state,
+                   id(${res}_ph_dose_s).state);
+      - switch.turn_on: ${res}_ph_down_pump
+      - delay: !lambda return (uint32_t) (id(${res}_ph_dose_s).state * 1000);
+      - switch.turn_off: ${res}_ph_down_pump
+      - lambda: |-
+          id(${res}_last_ph_dose_ms) = millis();
+          id(${res}_ph_doses_hour) += 1;
+          id(${res}_ph_doses_day) += 1;
+
+binary_sensor:
+  # Hitting the daily cap usually means the pH-down bottle is empty or the probe is failing.
+  - platform: template
+    id: ${res}_ph_dosing_limit
+    name: "${res_name} pH dosing limit reached"
+    device_class: problem
+    lambda: return id(${res}_ph_doses_day) >= (int) id(${res}_ph_max_doses_day).state;
+
+button:
+  # For priming the line. Point the outlet into a cup, not the reservoir.
+  - platform: template
+    name: "${res_name} prime pH-down pump (3 s)"
+    entity_category: config
+    on_press:
+      - switch.turn_on: ${res}_ph_down_pump
+      - delay: 3s
+      - switch.turn_off: ${res}_ph_down_pump
+
+interval:
+  - interval: 60s
+    then:
+      - if:
+          condition:
+            lambda: |-
+              if (!id(${res}_ph_dosing_enabled).state) return false;
+              if (id(${res}_ph_dose).is_running()) return false;
+              if (id(${res}_ph_fault).state || !id(${res}_ph).has_state()) return false;
+              if (id(${res}_ph).state <= id(${res}_ph_target).state + id(${res}_ph_deadband).state)
+                return false;
+              // Unsigned subtraction handles millis() wrap-around. Right after boot both
+              // timestamps are 0, so nothing doses until one mix time has passed.
+              uint32_t now = millis();
+              uint32_t mix_ms = (uint32_t) id(${res}_ph_mix_min).state * 60 * 1000;
+              if (now - id(${res}_last_ph_dose_ms) < mix_ms) return false;
+              if (now - id(${res}_last_topoff_ms) < mix_ms) return false;
+              if (id(${res}_topoff_pump).state || id(floor_leak).state) return false;
+              if (id(${res}_ph_doses_hour) >= (int) id(${res}_ph_max_doses_hour).state) return false;
+              if (id(${res}_ph_doses_day) >= (int) id(${res}_ph_max_doses_day).state) return false;
+              return true;
+          then:
+            - script.execute: ${res}_ph_dose
+
+  - interval: 1h
+    then:
+      - lambda: id(${res}_ph_doses_hour) = 0;
+
+  # Rolling 24 h window counted from boot, so it works without a clock.
+  - interval: 24h
+    then:
+      - lambda: id(${res}_ph_doses_day) = 0;

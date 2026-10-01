@@ -1,0 +1,81 @@
+# One deep water culture (DWC) reservoir: pH and EC monitoring, crop profile and
+# setpoints, auto top-off and automatic pH-down dosing.
+#
+# Include once per reservoir from a node file, each with its own vars and pins.
+#
+# Vars: res              id prefix, e.g. res_a (must be a valid C++ identifier)
+#       res_name         display name, e.g. "Reservoir A"
+#       ph_i2c_address   EZO-pH I2C address
+#       ec_modbus_address  DFRobot EC sensor Modbus address
+#       level_low_pin, level_high_pin, topoff_pump_pin, ph_down_pump_pin
+# Requires node packages: i2c, rs485, topoff_tank, leak_sensor
+
+packages:
+  core: !include
+    file: ../reservoir/core.yaml
+    vars:
+      res: ${res}
+      res_name: ${res_name}
+  ph: !include
+    file: ../reservoir/ph_ezo.yaml
+    vars:
+      res: ${res}
+      res_name: ${res_name}
+      ph_i2c_address: ${ph_i2c_address}
+  ec: !include
+    file: ../reservoir/ec_dfrobot_rs485.yaml
+    vars:
+      res: ${res}
+      res_name: ${res_name}
+      ec_modbus_address: ${ec_modbus_address}
+  level: !include
+    file: ../reservoir/level_dual_switch.yaml
+    vars:
+      res: ${res}
+      res_name: ${res_name}
+      level_low_pin: ${level_low_pin}
+      level_high_pin: ${level_high_pin}
+  topoff: !include
+    file: ../reservoir/topoff_pump.yaml
+    vars:
+      res: ${res}
+      res_name: ${res_name}
+      topoff_pump_pin: ${topoff_pump_pin}
+  ph_dosing: !include
+    file: ../reservoir/ph_down_dosing.yaml
+    vars:
+      res: ${res}
+      res_name: ${res_name}
+      ph_down_pump_pin: ${ph_down_pump_pin}
+
+# One summary per reservoir, so dashboards and alerts only need to watch two entities.
+# Keep this list in step with the problem sensors of the packages above.
+text_sensor:
+  - platform: template
+    id: ${res}_status
+    name: "${res_name} status"
+    update_interval: 30s
+    lambda: |-
+      std::string s;
+      auto add = [&s](bool active, const char *label) {
+        if (!active) return;
+        if (!s.empty()) s += ", ";
+        s += label;
+      };
+      add(id(${res}_ph_fault).state, "pH sensor fault");
+      add(id(${res}_ph_out_of_range).state, "pH out of range");
+      add(id(${res}_ph_dosing_limit).state, "pH dosing limit reached");
+      add(id(${res}_ec_fault).state, "EC sensor fault");
+      add(id(${res}_ec_out_of_range).state, "EC out of range");
+      add(id(${res}_water_temp_too_high).state, "water too warm");
+      add(id(${res}_level_fault).state, "level sensor fault");
+      add(id(${res}_water_low).state, "water low");
+      add(id(${res}_topoff_problem).state, "top-off problem");
+      return s.empty() ? std::string("OK") : s;
+
+binary_sensor:
+  - platform: template
+    id: ${res}_needs_attention
+    name: "${res_name} needs attention"
+    device_class: problem
+    lambda: return id(${res}_status).state != "OK";

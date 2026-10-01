@@ -1,0 +1,15 @@
+# Air temperature and humidity at the node's location.
+#
+# Requires: bus_i2c (node/i2c.yaml)
+# Provides: air_temperature, air_humidity
+
+sensor:
+  - platform: sht4x
+    i2c_id: bus_i2c
+    update_interval: 60s
+    temperature:
+      id: air_temperature
+      name: "Air temperature"
+    humidity:
+      id: air_humidity
+      name: "Air humidity"

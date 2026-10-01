@@ -1,0 +1,52 @@
+# Node dwc-1: the two side-by-side 5 gal DWC buckets.
+#
+# Phase 1 runs Reservoir A only. To add Reservoir B, wire it per
+# docs/hardware/dwc-node.md, then uncomment the reservoir_b block below.
+# Pin map and wiring: docs/hardware/dwc-node.md
+
+substitutions:
+  node_name: dwc-1
+  node_friendly_name: "DWC 1"
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+packages:
+  base: !include packages/node/base.yaml
+  i2c: !include packages/node/i2c.yaml
+  rs485: !include packages/node/rs485.yaml
+  climate: !include packages/node/climate_sht4x.yaml
+  topoff_tank: !include
+    file: packages/node/topoff_tank.yaml
+    vars:
+      topoff_tank_low_pin: GPIO18
+  leak: !include
+    file: packages/node/leak_sensor.yaml
+    vars:
+      leak_pin: GPIO19
+
+  reservoir_a: !include
+    file: packages/systems/dwc_reservoir.yaml
+    vars:
+      res: res_a
+      res_name: "Reservoir A"
+      ph_i2c_address: "99"     # EZO-pH factory default (0x63)
+      ec_modbus_address: "1"   # SEN0707 factory default
+      level_low_pin: GPIO32
+      level_high_pin: GPIO33
+      topoff_pump_pin: GPIO25
+      ph_down_pump_pin: GPIO26
+
+  # reservoir_b: !include
+  #   file: packages/systems/dwc_reservoir.yaml
+  #   vars:
+  #     res: res_b
+  #     res_name: "Reservoir B"
+  #     ph_i2c_address: "49"     # 0x31, set before connecting; see docs/calibration.md
+  #     ec_modbus_address: "2"   # set before connecting; see docs/calibration.md
+  #     level_low_pin: GPIO27
+  #     level_high_pin: GPIO14
+  #     topoff_pump_pin: GPIO13
+  #     ph_down_pump_pin: GPIO4

@@ -1,0 +1,86 @@
+# pH from an Atlas Scientific EZO-pH circuit on an Electrically Isolated EZO Carrier.
+# The EZO ships in UART mode and must be switched to I2C first; see docs/calibration.md.
+#
+# Vars: res, res_name, ph_i2c_address
+# Requires: bus_i2c (node/i2c.yaml)
+#           ${res}_ph_target, ${res}_ph_alarm_band (reservoir/core.yaml)
+#           ${res}_water_temp, a water temperature sensor for compensation
+# Provides: ${res}_ph, ${res}_ph_fault, ${res}_ph_out_of_range
+
+globals:
+  - id: ${res}_ph_last_ms
+    type: uint32_t
+    initial_value: "0"
+
+sensor:
+  - platform: ezo
+    id: ${res}_ph
+    name: "${res_name} pH"
+    i2c_id: bus_i2c
+    address: ${ph_i2c_address}
+    update_interval: 10s
+    unit_of_measurement: "pH"
+    device_class: ph
+    state_class: measurement
+    accuracy_decimals: 2
+    filters:
+      - filter_out: nan
+      # Median of the last five readings, published every 30 s.
+      - median:
+          window_size: 5
+          send_every: 3
+          send_first_at: 3
+    on_value:
+      - lambda: id(${res}_ph_last_ms) = millis();
+
+binary_sensor:
+  - platform: template
+    id: ${res}_ph_fault
+    name: "${res_name} pH sensor fault"
+    device_class: problem
+    # No valid reading for 5 minutes.
+    lambda: return millis() - id(${res}_ph_last_ms) > 5 * 60 * 1000;
+
+  - platform: template
+    id: ${res}_ph_out_of_range
+    name: "${res_name} pH out of range"
+    device_class: problem
+    lambda: |-
+      if (!id(${res}_ph).has_state()) return false;
+      float error = id(${res}_ph).state - id(${res}_ph_target).state;
+      return std::fabs(error) > id(${res}_ph_alarm_band).state;
+    filters:
+      # Ignore short excursions, such as right after a dose or a top-off.
+      - delayed_on: 10min
+
+interval:
+  # Keep the EZO's temperature compensation in step with the water.
+  - interval: 5min
+    then:
+      - lambda: |-
+          if (id(${res}_water_temp).has_state() && !std::isnan(id(${res}_water_temp).state))
+            id(${res}_ph).set_t(id(${res}_water_temp).state);
+
+# Calibration: mid first (it clears the others), then low, then high.
+# The probe must be sitting in the matching buffer when the button is pressed.
+button:
+  - platform: template
+    name: "${res_name} pH calibrate mid (7.00)"
+    entity_category: config
+    on_press:
+      - lambda: id(${res}_ph).set_calibration_point_mid(7.00);
+  - platform: template
+    name: "${res_name} pH calibrate low (4.00)"
+    entity_category: config
+    on_press:
+      - lambda: id(${res}_ph).set_calibration_point_low(4.00);
+  - platform: template
+    name: "${res_name} pH calibrate high (10.00)"
+    entity_category: config
+    on_press:
+      - lambda: id(${res}_ph).set_calibration_point_high(10.00);
+  - platform: template
+    name: "${res_name} pH clear calibration"
+    entity_category: config
+    on_press:
+      - lambda: id(${res}_ph).clear_calibration();

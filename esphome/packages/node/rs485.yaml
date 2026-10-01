@@ -1,0 +1,23 @@
+# RS485 Modbus RTU bus for the DFRobot industrial sensors.
+#
+# Uses a 3.3 V RS485 transceiver with automatic direction control. For a module with
+# DE/RE pins, add `flow_control_pin` to the modbus hub in the node file.
+#
+# Vars (optional): rs485_tx_pin, rs485_rx_pin, rs485_baud_rate
+# Provides: modbus_rs485
+
+defaults:
+  rs485_tx_pin: GPIO17
+  rs485_rx_pin: GPIO16
+  # DFRobot RS485 sensors ship at 4800 baud. Every device on the bus must match.
+  rs485_baud_rate: "4800"
+
+uart:
+  - id: uart_rs485
+    tx_pin: ${rs485_tx_pin}
+    rx_pin: ${rs485_rx_pin}
+    baud_rate: ${rs485_baud_rate}
+
+modbus:
+  - id: modbus_rs485
+    uart_id: uart_rs485

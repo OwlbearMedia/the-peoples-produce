@@ -1,0 +1,52 @@
+# Node base: identity, connectivity, OTA and health entities. Every node includes this.
+#
+# Substitutions (set in the node file): node_name, node_friendly_name
+#
+# Nodes must keep controlling their reservoirs when Wi-Fi or Home Assistant is down,
+# so automatic reboots on lost connections are disabled. A reboot resets the dosing
+# and top-off rate limits that live in RAM. See docs/control-logic.md.
+
+esphome:
+  name: ${node_name}
+  friendly_name: ${node_friendly_name}
+  project:
+    name: owlbearmedia.the-peoples-produce
+    version: "0.1.0"
+
+logger:
+  level: DEBUG
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+  reboot_timeout: 0s
+
+# OTA uploads are encrypted with the same key as the API.
+ota:
+  - platform: esphome
+    encryption: {}
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  reboot_timeout: 0s
+  ap:
+    ssid: "${node_name} fallback"
+    password: !secret fallback_ap_password
+
+captive_portal:
+
+sensor:
+  - platform: uptime
+    name: "Uptime"
+  - platform: wifi_signal
+    name: "Wi-Fi signal"
+    update_interval: 60s
+
+binary_sensor:
+  - platform: status
+    name: "Status"
+
+button:
+  - platform: restart
+    name: "Restart"
