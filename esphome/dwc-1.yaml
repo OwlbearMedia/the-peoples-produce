@@ -1,7 +1,8 @@
 # Node dwc-1: the two side-by-side 5 gal DWC buckets.
 #
 # Phase 1 runs Reservoir A only. To add Reservoir B, wire it per
-# docs/hardware/dwc-node.md, then uncomment the reservoir_b block below.
+# docs/hardware/dwc-node.md, then uncomment the reservoir_b block below and delete
+# its PLANNED marker lines. tools/validate.sh checks planned blocks as if enabled.
 # Pin map and wiring: docs/hardware/dwc-node.md
 
 substitutions:
@@ -39,6 +40,7 @@ packages:
       topoff_pump_pin: GPIO25
       ph_down_pump_pin: GPIO26
 
+  # BEGIN PLANNED: reservoir_b
   # reservoir_b: !include
   #   file: packages/systems/dwc_reservoir.yaml
   #   vars:
@@ -50,3 +52,4 @@ packages:
   #     level_high_pin: GPIO14
   #     topoff_pump_pin: GPIO13
   #     ph_down_pump_pin: GPIO4
+  # END PLANNED: reservoir_b

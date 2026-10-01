@@ -52,6 +52,8 @@ tools/validate.sh --compile  # also builds firmware; checks C++ lambdas; first r
 ```
 
 Run `tools/validate.sh` after any YAML change and `--compile` after changing a lambda.
+It also checks each node with its planned (commented-out) hardware enabled; see
+[docs/esphome.md](docs/esphome.md#planned-blocks).
 Both must pass before committing. You cannot flash or test against hardware; say so
 when hardware testing is still needed.
 
@@ -111,6 +113,8 @@ Examples of the kind of thing worth suggesting:
 
 ## Commits and pull requests
 
+- `main` is protected: direct pushes are rejected. Work on a branch and open a pull
+  request (no approvals are required, so the user can merge it).
 - Short imperative subject line; body explains why.
 - Do not add AI attribution of any kind: no `Co-Authored-By` trailers for AI tools and
   no "Generated with" lines in commits or PR descriptions.
