@@ -5,6 +5,10 @@
 #   tools/validate.sh            schema and config validation
 #   tools/validate.sh --compile  also build the firmware (checks C++ lambdas)
 #
+# A node with commented-out blocks between "# BEGIN PLANNED" and "# END PLANNED"
+# markers is also validated as <node>.planned.yaml with those blocks enabled, so
+# hardware that isn't built yet can't silently break.
+#
 # Requires uv (https://docs.astral.sh/uv/). ESPHOME_VERSION overrides the pinned version.
 set -euo pipefail
 
@@ -30,6 +34,16 @@ wifi_password: "validate-password"
 fallback_ap_password: "validate-password"
 api_encryption_key: "$(openssl rand -base64 32)"
 EOF
+
+for node in "$work"/*.yaml; do
+  [[ "$(basename "$node")" == "secrets.yaml" ]] && continue
+  grep -q "# BEGIN PLANNED" "$node" || continue
+  # Inside the markers, strip the first "# " from each line to uncomment it.
+  awk '/# BEGIN PLANNED/ { planned = 1; next }
+       /# END PLANNED/   { planned = 0; next }
+       planned           { sub(/# /, "") }
+                         { print }' "$node" > "${node%.yaml}.planned.yaml"
+done
 
 status=0
 for node in "$work"/*.yaml; do

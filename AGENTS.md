@@ -52,6 +52,8 @@ tools/validate.sh --compile  # also builds firmware; checks C++ lambdas; first r
 ```
 
 Run `tools/validate.sh` after any YAML change and `--compile` after changing a lambda.
+It also checks each node with its planned (commented-out) hardware enabled; see
+[docs/esphome.md](docs/esphome.md#planned-blocks).
 Both must pass before committing. You cannot flash or test against hardware; say so
 when hardware testing is still needed.
 
@@ -94,8 +96,25 @@ update the matching doc in the same commit. Record significant design choices in
 [docs/decisions.md](docs/decisions.md). New docs get a link in
 [docs/README.md](docs/README.md), and in this file's table if agents need them.
 
+### Suggest docs for what you had to learn
+
+Before wrapping up a session, think about what you had to work out that the docs
+would have told you: an undocumented behavior, a tool or library quirk, a source
+that blocks automated reading, the reasoning behind a choice. If documenting it would
+help future sessions, **suggest it to the user**. Say what you learned and which doc
+it belongs in (or propose a new one under `docs/`). Write it only once they agree,
+unless they already asked you to update the docs.
+
+Examples of the kind of thing worth suggesting:
+
+- ESPHome template selects restore their state by index, not by option name.
+- PMC and ResearchGate pages often block automated fetching; the in-app browser or a
+  journal's own site may still work.
+
 ## Commits and pull requests
 
+- `main` is protected: direct pushes are rejected. Work on a branch and open a pull
+  request (no approvals are required, so the user can merge it).
 - Short imperative subject line; body explains why.
 - Do not add AI attribution of any kind: no `Co-Authored-By` trailers for AI tools and
   no "Generated with" lines in commits or PR descriptions.

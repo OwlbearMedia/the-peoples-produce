@@ -9,13 +9,15 @@ Example: Reservoir B on `dwc-1`.
    **before** connecting them ([calibration.md](calibration.md)). Every address on a
    bus must be unique.
 3. Wire it to the reserved pins in the [pin map](hardware/dwc-node.md#pin-map).
-4. Uncomment the `reservoir_b` block in `esphome/dwc-1.yaml`.
+4. Uncomment the `reservoir_b` block in `esphome/dwc-1.yaml` and delete its
+   `BEGIN PLANNED`/`END PLANNED` marker lines.
 5. Validate, flash, bench test, calibrate, then commission it
    ([control-logic.md](control-logic.md#commissioning)).
 6. Add its `needs attention` entity to the Home Assistant alert
    ([home-assistant.md](home-assistant.md)).
 
-The firmware has been compile-tested with both reservoirs enabled.
+`tools/validate.sh` already checks `dwc-1` with Reservoir B enabled, so the config
+should validate unchanged once uncommented.
 
 ## Adding a node
 
