@@ -64,3 +64,24 @@ the network.
 The air pump runs on mains, which stays out of the node enclosure (design rule 5). A
 smart plug with power metering lets Home Assistant alert when the pump stops drawing
 power. An inline air pressure sensor on the node is a possible later upgrade.
+
+## 9. Our own sourced crop database
+
+No maintained open database of hydroponic crop targets exists. OpenFarm shut down in
+April 2025 and never had EC/pH data, Growstuff has no EC/pH, and a GitHub dataset we
+found was unlicensed and covered 8 crops. Published values often disagree: Oklahoma
+State's HLA-6722 puts peppers at EC 0.8-1.8, while other sources say 2.0-3.5. A 2024
+HortScience study says tomato recommendations are inconsistent too.
+
+So [`crops/crops.yaml`](../crops/crops.yaml) records what each source says, the range
+chosen and why, and a confidence level. No single source is the default; crops whose
+sources conflict are kept out of the firmware until resolved. A generator builds the
+firmware's profile select from the file, so selecting a crop stays on the node and
+works offline. Rules: [crop-profiles.md](crop-profiles.md#research-rules).
+
+## 10. Dissolved oxygen deferred
+
+A DO sensor would directly check DWC aeration, but costs $199-355 per reservoir. The
+smart-plug power check covers a dead air pump for now. Findings and a recommended
+part are in [research/dissolved-oxygen.md](research/dissolved-oxygen.md).
+
