@@ -16,6 +16,11 @@ packages:
     vars:
       res: ${res}
       res_name: ${res_name}
+  crop_profile: !include
+    file: ../reservoir/crop_profile.yaml
+    vars:
+      res: ${res}
+      res_name: ${res_name}
   ph: !include
     file: ../reservoir/ph_ezo.yaml
     vars:

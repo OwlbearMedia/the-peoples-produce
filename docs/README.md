@@ -8,7 +8,7 @@ Reference for both people and AI agents working on this project.
 - [Decision log](decisions.md): what was decided and why
 - [Sensors and isolation](sensors-and-isolation.md): why probes interfere, the one-non-isolated-probe rule, sensor choices
 - [Control logic](control-logic.md): top-off, pH dosing, safety layers, alarms, commissioning
-- [Crop profiles](crop-profiles.md): pH and EC targets per crop
+- [Crop profiles](crop-profiles.md): the sourced crop database, research rules, current profiles
 - [Safety](safety.md): electrical, water, chemical and firmware rules
 
 ## Hardware
@@ -23,3 +23,9 @@ Reference for both people and AI agents working on this project.
 - [Home Assistant](home-assistant.md): adding nodes, dashboard, alerts, air pump monitoring
 - [Extending the system](extending.md): adding a reservoir, a node, a system type (NFT), a module
 - [Roadmap](roadmap.md)
+
+## Research notes
+
+Findings for features not built yet, kept for when they are picked up.
+
+- [Dissolved oxygen sensing](research/dissolved-oxygen.md): why, options, recommended part

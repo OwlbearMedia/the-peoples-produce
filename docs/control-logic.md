@@ -87,6 +87,8 @@ Home Assistant).
 Turn the automation on one piece at a time:
 
 1. Calibrate pH and check EC against a handheld meter ([calibration.md](calibration.md)).
+   Choose the reservoir's crop profile; until then it shows "Not set" and uses
+   first-boot defaults.
 2. Measure the pH-down pump's flow and pick a dose time that adds about 1 ml of diluted
    pH-down.
 3. Turn on **auto top-off**. Watch a few fills, then compare how long each one takes
