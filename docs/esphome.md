@@ -15,14 +15,15 @@ esphome/
     │   ├── topoff_tank.yaml   shared top-off tank level (topoff_tank_low)
     │   └── leak_sensor.yaml   floor leak probe (floor_leak)
     ├── reservoir/             once per reservoir, keyed by ${res}
-    │   ├── core.yaml          crop profile and setpoints
+    │   ├── core.yaml          setpoints
+    │   ├── crop_profile.yaml  crop profile select (GENERATED from crops/crops.yaml)
     │   ├── ph_ezo.yaml        Atlas EZO-pH
     │   ├── ec_dfrobot_rs485.yaml  DFRobot SEN0707 EC and water temperature
     │   ├── level_dual_switch.yaml two level switches
     │   ├── topoff_pump.yaml   auto top-off
     │   └── ph_down_dosing.yaml    pH-down dosing
     └── systems/
-        └── dwc_reservoir.yaml one DWC reservoir = core + ph + ec + level + topoff + dosing
+        └── dwc_reservoir.yaml one DWC reservoir = core + crop profile + ph + ec + level + topoff + dosing
 ```
 
 The layers are explained in [architecture.md](architecture.md#firmware-layers).
@@ -53,6 +54,8 @@ A missing requirement fails at compile time, which is intended.
   ones to the bundle's status roll-up.
 - **Units:** EC in mS/cm, temperature in °C.
 - **Defaults for vars:** use a `defaults:` block in the package (see `i2c.yaml`).
+- **Generated files:** `crop_profile.yaml` comes from `tools/gen_crop_profiles.py`.
+  Change `crops/crops.yaml` and regenerate; never edit the output.
 
 ## Validate, build and flash
 
@@ -62,9 +65,10 @@ Validation needs no hardware. From the repo root:
 tools/validate.sh
 ```
 
-It validates every node config with throwaway secrets, using the ESPHome version pinned
-in the script. Add `--compile` to also build the firmware. That checks all C++ lambdas;
-the first build downloads the toolchain and takes several minutes.
+It checks that the generated crop profiles are current, then validates every node
+config with throwaway secrets, using the ESPHome version pinned in the script. Add
+`--compile` to also build the firmware. That checks all C++ lambdas; the first build
+downloads the toolchain and takes several minutes.
 
 To flash a real node, create `esphome/secrets.yaml` from the example, then:
 

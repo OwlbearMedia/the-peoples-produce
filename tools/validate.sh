@@ -13,6 +13,10 @@ command="config"
 [[ "${1:-}" == "--compile" ]] && command="compile"
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
+
+echo "==> crop profiles up to date"
+uv run --quiet "$root/tools/gen_crop_profiles.py" --check
+
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 

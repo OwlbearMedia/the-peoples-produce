@@ -1,0 +1,175 @@
+# Crop targets for hydroponic reservoirs.
+#
+# There is no single authoritative or maintained open database of hydroponic crop
+# targets, and published recommendations often disagree. This file records what each
+# source says and the range we chose from it, so every number can be traced and
+# challenged. Research rules and how to add a crop: docs/crop-profiles.md
+#
+# After editing, regenerate the firmware package and docs table:
+#   uv run tools/gen_crop_profiles.py
+#
+# Units: EC in mS/cm (1 mS/cm = 1 dS/m), pH unitless.
+
+schema_version: 1
+
+# Every source cited by a crop below. `type` is one of: peer-reviewed, extension,
+# trade-press, grower-guide. Fields not verified from the source itself are omitted.
+sources:
+  okstate-hla-6722:
+    title: "Electrical Conductivity and pH Guide for Hydroponics (HLA-6722)"
+    authors: "Bruce Dunn, Hardeep Singh"
+    publisher: "Oklahoma State University Extension"
+    year: 2017
+    type: extension
+    url: "https://extension.okstate.edu/fact-sheets/electrical-conductivity-and-ph-guide-for-hydroponics"
+    notes: >-
+      One EC and pH range per crop, no growth stages. Values match a widely copied
+      hydroponic chart, and its pepper range is far below other sources.
+
+  ohio-state-hyg-1437:
+    title: "Hydroponic Nutrient Solution for Optimized Greenhouse Tomato Production (HYG-1437)"
+    authors: "Mark Kroggel, Chieri Kubota"
+    publisher: "The Ohio State University Extension"
+    year: 2018
+    type: extension
+    url: "https://cfaes.osu.edu/fact-sheet/hydroponic-nutrient-solution-optimized-greenhouse-tomato-production"
+    notes: "Describes Merle Jensen's (University of Arizona) staged tomato solutions."
+
+  dunn-nattrass-2024:
+    title: "Response of Hydroponic Tomato Yield and Yield-correlated Morphological Characteristics to Constant or Growth Stage-based Nutrient Management Strategies"
+    authors: "Ronnie J. Dunn, Michael Nattrass"
+    publisher: "HortScience 59(10):1534-1542"
+    year: 2024
+    type: peer-reviewed
+    url: "https://doi.org/10.21273/HORTSCI18044-24"
+    notes: >-
+      Reports that published nutrient and EC recommendations for tomato are not
+      consistent; a constant-concentration regime matched staged feeding on total yield.
+
+  currey-2018-peppers:
+    title: "Peppers 101: a production guide"
+    authors: "Christopher J. Currey"
+    publisher: "Produce Grower"
+    year: 2018
+    type: trade-press
+    url: "https://www.producegrower.com/article/peppers-101-a-production-guide/"
+
+  tabassum-akon-broccoli-ec:
+    title: "Effect of Electrical Conductivity on Growth, Yield and Quality of Broccoli Grown in Hydroponic System"
+    authors: "Mushfiqua Tabassum, Md. Roman Akon"
+    type: peer-reviewed
+    url: "https://www.researchgate.net/publication/371672312"
+    notes: "Deep water culture. EC treatments 1.5, 2.0, 2.5, 3.0 and 3.5 dS/m. Read from the abstract only."
+
+  tabassum-akon-broccoli-ph:
+    title: "Effect of Nutrient Solution pH on Growth and Yield of Broccoli"
+    authors: "Mushfiqua Tabassum, Md. Roman Akon"
+    type: peer-reviewed
+    url: "https://www.researchgate.net/publication/378588871"
+    notes: "Deep water culture. pH treatments 4, 5, 6, 7 and 8. Read from the abstract only."
+
+  hydrohowto-chart:
+    title: "List of pH & EC Levels for 65+ Hydroponic Vegetables & Herbs"
+    publisher: "hydrohowto.com"
+    type: grower-guide
+    url: "https://hydrohowto.com/ph-ec-hydroponic-vegetable/"
+    notes: "Cites no sources."
+
+  hydroponicsup-brussels:
+    title: "Hydroponic Brussels Sprouts: Complete Growing Guide"
+    publisher: "hydroponicsup.com"
+    type: grower-guide
+    url: "https://hydroponicsup.com/hydroponic-cultivation/vegetables/brussels-sprouts/"
+
+# status:     active      generated into the firmware's crop profile select
+#             conflicting sources disagree; recorded here but not generated
+#             draft       research in progress; not generated
+# confidence: high        independent research and extension sources agree
+#             medium      at least one research or extension source, others consistent
+#             low         grower charts only, likely sharing one origin
+#
+# Targets are ranges. The firmware sets the pH target to the middle of the pH range
+# and alarms outside it; EC alarms outside the EC range. A crop has either one `ec`
+# range or a list of `stages`, each with its own `ec` (and optionally its own `ph`).
+crops:
+  - id: tomato
+    name: Tomato
+    status: active
+    confidence: medium
+    ph: { min: 5.5, max: 6.5 }
+    stages:
+      - id: vegetative
+        name: vegetative
+        description: Transplant to the second flower truss
+        ec: { min: 2.0, max: 2.5 }
+      - id: fruiting
+        name: fruiting
+        description: Third flower truss onward
+        ec: { min: 2.4, max: 3.5 }
+    evidence:
+      - source: ohio-state-hyg-1437
+        says: "pH 5.5-6.5 for nutrient availability; EC about 2.0 at stage 1 (to second truss), about 2.4 at stage 3 (past fifth truss)"
+      - source: okstate-hla-6722
+        says: "EC 2.0-4.0, pH 6.0-6.5 (no stages)"
+      - source: hydrohowto-chart
+        says: "EC 1.5-3.0, pH 5.5-6.3 (no stages)"
+      - source: dunn-nattrass-2024
+        says: "Recommendations are inconsistent across sources; constant concentration performed as well as staged"
+    rationale: >-
+      All sources put early growth near EC 2.0 and raise it once fruit sets. The fruiting
+      range runs from Ohio State's 2.4 to the 3.5 most charts stop at; 4.0 is left out
+      because only one source goes that high. pH 5.5-6.5 is the shared availability
+      range and contains every tomato-specific range above.
+
+  - id: broccoli
+    name: Broccoli
+    status: active
+    confidence: medium
+    ph: { min: 6.0, max: 6.5 }
+    ec: { min: 2.8, max: 3.2 }
+    evidence:
+      - source: tabassum-akon-broccoli-ec
+        says: "In DWC, EC 3.0 gave the best growth and yield; 3.5 and lower levels reduced them"
+      - source: tabassum-akon-broccoli-ph
+        says: "In DWC, pH 6.0 was optimal among pH 4-8; high and low pH reduced yield"
+      - source: okstate-hla-6722
+        says: "EC 2.8-3.5, pH 6.0-6.8"
+      - source: hydrohowto-chart
+        says: "EC 2.8-3.5, pH 6.0-6.5"
+    rationale: >-
+      Charts agree on EC 2.8-3.5. The DWC study found 3.5 worse than 3.0, so the range
+      is centred on 3.0 and capped at 3.2. pH 6.0-6.5 is where all sources overlap and
+      contains the study's optimum.
+
+  - id: brussels-sprouts
+    name: Brussels sprouts
+    status: active
+    confidence: low
+    ph: { min: 6.2, max: 6.8 }
+    ec: { min: 2.5, max: 3.0 }
+    evidence:
+      - source: hydrohowto-chart
+        says: "EC 2.5-3.0, pH 6.5-7.5"
+      - source: hydroponicsup-brussels
+        says: "EC 2.5-3.0, pH 6.5-7.5"
+    rationale: >-
+      No research or extension source found. Grower charts agree on EC 2.5-3.0 and all
+      include pH 6.5. Their upper pH of 7.5 is well above the 5.5-6.5 range where most
+      nutrients are readily available (ohio-state-hyg-1437), so the range is held to
+      6.5 ± 0.3. Replace this when a better source turns up.
+
+  - id: pepper
+    name: Pepper
+    status: conflicting
+    confidence: low
+    evidence:
+      - source: okstate-hla-6722
+        says: "EC 0.8-1.8, pH 5.5-6.0"
+      - source: currey-2018-peppers
+        says: "Propagation EC about 0.5; after transplanting 2.0-2.5 during the early phase"
+      - source: hydrohowto-chart
+        says: "Bell: EC 2.0-3.0, pH 6.0-6.5. Hot: EC 3.0-3.5, pH 5.0-6.5"
+    rationale: >-
+      EC recommendations for established plants range from 0.8 to 3.5 and barely overlap.
+      Needs a research source (ideally DWC or NFT, bell and hot separately) before it
+      can be activated.

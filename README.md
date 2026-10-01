@@ -34,6 +34,9 @@ every location into one dashboard with history and phone alerts.
 - **Probes don't interfere.** The pH probe sits behind an isolated Atlas Scientific
   circuit, and the EC sensor is an industrial RS485 probe. Multiple non-isolated probes
   in one reservoir corrupt each other's readings.
+- **Crop profiles from sourced data.** Picking a crop and growth stage fills in its
+  pH and EC targets. The data lives in a [crop database](crops/crops.yaml) where every
+  value cites its sources, because published recommendations often disagree.
 - **Fails safe.** Pumps boot off, every pump has a watchdog, automatic actions are
   rate-limited, and a leak or empty top-off tank stops everything that adds water.
 
@@ -45,6 +48,7 @@ watches the top-off tank and a floor leak probe.
 
 ```
 esphome/           ESPHome firmware: node configs and reusable packages
+crops/             Sourced crop database (pH and EC targets)
 docs/              Design, hardware, calibration and operations docs
 tools/             Bench and validation scripts
 AGENTS.md          Guide for AI coding agents
@@ -72,6 +76,7 @@ Everything is in [docs/](docs/README.md):
 
 - [Architecture](docs/architecture.md) · [Decision log](docs/decisions.md) · [Roadmap](docs/roadmap.md)
 - [Sensors and isolation](docs/sensors-and-isolation.md) · [Control logic](docs/control-logic.md) · [Crop profiles](docs/crop-profiles.md)
+- [Research notes](docs/README.md#research-notes), such as [dissolved oxygen](docs/research/dissolved-oxygen.md)
 - [DWC node hardware](docs/hardware/dwc-node.md) · [Calibration](docs/calibration.md) · [Safety](docs/safety.md)
 - [ESPHome configuration](docs/esphome.md) · [Home Assistant](docs/home-assistant.md) · [Extending](docs/extending.md)
 

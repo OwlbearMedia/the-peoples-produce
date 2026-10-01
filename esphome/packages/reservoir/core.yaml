@@ -1,50 +1,16 @@
-# Per-reservoir setpoints and crop profile. Every reservoir bundle includes this.
+# Per-reservoir setpoints. Every reservoir bundle includes this.
 #
-# Choosing a crop profile writes its values into the setpoint numbers below. The
-# numbers can then be fine-tuned by hand; the profile select keeps showing the last
-# profile applied. Profile values are documented in docs/crop-profiles.md, and this
-# file is their source of truth.
+# Choosing a crop profile (reservoir/crop_profile.yaml, generated from
+# crops/crops.yaml) writes the pH target, pH alarm band and EC limits here. All
+# setpoints can also be tuned by hand.
 #
 # Vars: res, res_name
-# Provides: ${res}_profile, ${res}_ph_target, ${res}_ph_deadband, ${res}_ph_alarm_band,
+# Provides: ${res}_ph_target, ${res}_ph_deadband, ${res}_ph_alarm_band,
 #           ${res}_ec_low, ${res}_ec_high, ${res}_water_temp_high
+#
+# Initial values only apply on first boot, before a crop profile is chosen. Min and
+# max limits must stay in step with PH_LIMITS and EC_LIMITS in tools/gen_crop_profiles.py.
 
-select:
-  - platform: template
-    id: ${res}_profile
-    name: "${res_name} crop profile"
-    entity_category: config
-    optimistic: true
-    restore_value: true
-    options:
-      - "Seedling"
-      - "Tomato - vegetative"
-      - "Tomato - fruiting"
-      - "Pepper"
-      - "Brassica"
-    initial_option: "Tomato - fruiting"
-    # set_action runs only when the profile is changed, not when it is restored at
-    # boot, so hand-tuned setpoints survive a reboot.
-    set_action:
-      - lambda: |-
-          float ph, ec_lo, ec_hi;
-          if (x == "Seedling")                 { ph = 6.0f; ec_lo = 0.6f; ec_hi = 1.2f; }
-          else if (x == "Tomato - vegetative") { ph = 6.0f; ec_lo = 1.8f; ec_hi = 2.5f; }
-          else if (x == "Tomato - fruiting")   { ph = 6.0f; ec_lo = 2.5f; ec_hi = 3.5f; }
-          else if (x == "Pepper")              { ph = 6.0f; ec_lo = 1.8f; ec_hi = 2.8f; }
-          else if (x == "Brassica")            { ph = 6.3f; ec_lo = 2.5f; ec_hi = 3.2f; }
-          else return;
-          auto apply = [](number::Number *n, float v) {
-            auto call = n->make_call();
-            call.set_value(v);
-            call.perform();
-          };
-          apply(id(${res}_ph_target), ph);
-          apply(id(${res}_ec_low), ec_lo);
-          apply(id(${res}_ec_high), ec_hi);
-          ESP_LOGI("profile", "${res_name}: applied profile '%s'", x.c_str());
-
-# Initial values match the "Tomato - fruiting" profile and only apply on first boot.
 number:
   - platform: template
     id: ${res}_ph_target

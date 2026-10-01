@@ -23,7 +23,8 @@ written but commented out. An NFT node is planned. See [docs/roadmap.md](docs/ro
 | Sensors or probes | [docs/sensors-and-isolation.md](docs/sensors-and-isolation.md) |
 | Pins, wiring, addresses | [docs/hardware/dwc-node.md](docs/hardware/dwc-node.md) |
 | New reservoir, node, system type or module | [docs/extending.md](docs/extending.md) |
-| Crop targets | [docs/crop-profiles.md](docs/crop-profiles.md) |
+| Crop targets or the crop database | [docs/crop-profiles.md](docs/crop-profiles.md) (research rules) |
+| A deferred feature (e.g. dissolved oxygen) | [docs/research/](docs/README.md#research-notes) |
 
 Full index: [docs/README.md](docs/README.md).
 
@@ -35,7 +36,9 @@ esphome/packages/node/           per-node packages (base, buses, tank, leak)
 esphome/packages/reservoir/      per-reservoir modules, IDs prefixed ${res}_
 esphome/packages/systems/        bundles composing modules into a system type
 esphome/secrets.yaml.example     template; real secrets.yaml is git-ignored
-tools/validate.sh                validate (and optionally compile) every node config
+crops/crops.yaml                 sourced crop database (source of truth for profiles)
+tools/gen_crop_profiles.py       generates crop_profile.yaml and the docs table from it
+tools/validate.sh                check generated files, validate (optionally compile) nodes
 tools/dfrobot_rs485.py           bench tool for DFRobot RS485 sensors
 docs/                            documentation for people and agents
 ```
@@ -43,6 +46,7 @@ docs/                            documentation for people and agents
 ## Commands
 
 ```bash
+uv run tools/gen_crop_profiles.py  # after editing crops/crops.yaml
 tools/validate.sh            # config validation, seconds; no hardware or secrets needed
 tools/validate.sh --compile  # also builds firmware; checks C++ lambdas; first run is slow
 ```
@@ -74,8 +78,13 @@ New actuators follow the checklist in [docs/extending.md](docs/extending.md#addi
 - Units: EC in mS/cm, temperature in °C.
 - New problem sensors: `device_class: problem`, and add them to the status roll-up in
   the system bundle.
-- Crop profile values live in `esphome/packages/reservoir/core.yaml`; keep
-  [docs/crop-profiles.md](docs/crop-profiles.md) in step.
+- Crop data lives only in `crops/crops.yaml`. Never edit the generated
+  `esphome/packages/reservoir/crop_profile.yaml` or the generated table in
+  `docs/crop-profiles.md`; regenerate them.
+- Adding crop data: follow the research rules in
+  [docs/crop-profiles.md](docs/crop-profiles.md#research-rules). Cite only what you
+  actually read, record every source's values under `evidence`, and mark crops with
+  conflicting sources `status: conflicting` instead of picking a number.
 - Match the existing comment style: explain why, not what.
 
 ## Keeping docs current

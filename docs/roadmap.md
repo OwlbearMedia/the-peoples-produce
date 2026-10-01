@@ -5,6 +5,7 @@
 - [x] Firmware for `dwc-1` with Reservoir A: pH, EC, water temperature, level, auto
       top-off, pH-down dosing, crop profiles, alarms
 - [x] Firmware compile-tested with Reservoir B enabled
+- [x] Sourced crop database with generated crop profiles
 - [ ] Buy the parts ([hardware/dwc-node.md](hardware/dwc-node.md#parts-phase-1))
 - [ ] Build and bench test
 - [ ] Calibrate and commission ([control-logic.md](control-logic.md#commissioning))
@@ -26,8 +27,11 @@
 
 ## Later ideas
 
+- Dissolved oxygen sensing, or an inline airline pressure sensor as a cheaper aeration
+  check ([research notes](research/dissolved-oxygen.md))
+- Research and add more crops to [`crops/crops.yaml`](../crops/crops.yaml), starting
+  with resolving the pepper conflict ([crop-profiles.md](crop-profiles.md#research-rules))
 - Nutrient A/B dosing driven by EC (two more peristaltic pumps per reservoir)
-- Inline air pressure sensor on each DWC airline (detects disconnected or clogged lines)
 - Volume tracking: log top-off pump run time to estimate water use per reservoir
 - Upgrade EC to Atlas EZO-EC with an isolated carrier if ±0.2 mS/cm proves too coarse
 - CI: run `tools/validate.sh` on every push
