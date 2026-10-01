@@ -85,6 +85,21 @@ update the matching doc in the same commit. Record significant design choices in
 [docs/decisions.md](docs/decisions.md). New docs get a link in
 [docs/README.md](docs/README.md), and in this file's table if agents need them.
 
+### Suggest docs for what you had to learn
+
+Before wrapping up a session, think about what you had to work out that the docs
+would have told you: an undocumented behavior, a tool or library quirk, a source
+that blocks automated reading, the reasoning behind a choice. If documenting it would
+help future sessions, **suggest it to the user**. Say what you learned and which doc
+it belongs in (or propose a new one under `docs/`). Write it only once they agree,
+unless they already asked you to update the docs.
+
+Examples of the kind of thing worth suggesting:
+
+- ESPHome template selects restore their state by index, not by option name.
+- PMC and ResearchGate pages often block automated fetching; the in-app browser or a
+  journal's own site may still work.
+
 ## Commits and pull requests
 
 - Short imperative subject line; body explains why.
